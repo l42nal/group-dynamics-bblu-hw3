@@ -11,7 +11,7 @@ example: feature/vlad/add-questionnaire
 ## Коммиты
 
 Формат сообщений:
-<type>: <description>
+`<type>: <description>`
 Где `<type>` одно из:
 - `init` — инициализация
 - `feat` — новая функциональность
