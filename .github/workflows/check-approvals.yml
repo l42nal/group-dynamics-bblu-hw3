@@ -23,7 +23,7 @@ jobs:
       - name: Fetch reviews via GitHub API
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REQ: 1
+          REQ: 4
           OWNER: ${{ github.repository_owner }}
           REPO: ${{ github.event.repository.name }}
           PR: ${{ github.event.pull_request.number }}
