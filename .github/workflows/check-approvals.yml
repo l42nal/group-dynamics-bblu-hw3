@@ -1,0 +1,54 @@
+name: "Approval check"
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+permissions:
+  checks: write
+  contents: read
+  pull-requests: read
+
+jobs:
+  check_approvals:
+    name: check_approvals
+    runs-on: ubuntu-latest
+    steps:
+      - name: Show context
+        run: |
+          echo "PR #${{ github.event.pull_request.number }}"
+          echo "Author: ${{ github.event.pull_request.user.login }}"
+      - name: Fetch reviews via GitHub API
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REQ: ${{ secrets.REQUIRED_APPROVALS }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.event.repository.name }}
+          PR: ${{ github.event.pull_request.number }}
+          AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: |
+          echo "Required approvals: $REQ"
+          # get reviews json
+          reviews_url="https://api.github.com/repos/$OWNER/$REPO/pulls/$PR/reviews"
+          echo "Fetching reviews from $reviews_url"
+          reviews_json="$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" -H "Accept: application/vnd.github+json" "$reviews_url")"
+          # extract unique reviewers that have 'APPROVED' state and are not the author
+          approved_reviewers=$(echo "$reviews_json" \
+            | jq -r '.[] | select(.state=="APPROVED") | .user.login' \
+            | sort -u \
+            | grep -v "^$AUTHOR$" || true)
+          # count them
+          count=$(echo "$approved_reviewers" | sed '/^$/d' | wc -l | tr -d ' ')
+          echo "Approved unique reviewers (excluding author):"
+          echo "$approved_reviewers" || true
+          echo "Count = $count"
+          # decide
+          if [ -z "$REQ" ]; then
+            echo "REQUIRED_APPROVALS secret not set. Failing to be safe."
+            exit 1
+          fi
+          if [ "$count" -lt "$REQ" ]; then
+            echo "❌ Not enough approvals. Need $REQ, got $count."
+            exit 1
+          fi
+          echo "✅ Enough approvals."
