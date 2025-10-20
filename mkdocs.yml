@@ -1,0 +1,6 @@
+site_name: Group Dynamics Docs
+nav:
+  - Home: index.md
+  - Questionnaire: questionnaire.md
+theme:
+  name: material
